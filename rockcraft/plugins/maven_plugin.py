@@ -62,7 +62,7 @@ SITECUSTOMIZE_TEMPLATE = dedent(
 class MavenPlugin(maven_plugin.MavenPlugin):
     def get_build_packages(self) -> Set[str]:
         """Return a set of required packages to install in the build environment."""
-        return {"maven", "default-jdk"}
+        return {"maven", "openjdk-21-jdk"}
 
     def get_build_commands(self) -> List[str]:
         """Return a list of commands to run during the build step."""
