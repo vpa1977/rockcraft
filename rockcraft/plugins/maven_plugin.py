@@ -1,7 +1,7 @@
 
 # -*- Mode:Python; indent-tabs-mode:nil; tab-width:4 -*-
 #
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -62,7 +62,7 @@ SITECUSTOMIZE_TEMPLATE = dedent(
 class MavenPlugin(maven_plugin.MavenPlugin):
     def get_build_packages(self) -> Set[str]:
         """Return a set of required packages to install in the build environment."""
-        return {"maven", "openjdk-21-jdk"}
+        return {"maven", "openjdk-21-jdk-headless"}
 
     def get_build_commands(self) -> List[str]:
         """Return a list of commands to run during the build step."""
@@ -75,6 +75,7 @@ class MavenPlugin(maven_plugin.MavenPlugin):
             mvn_cmd += ["-s", str(settings_path)]
         # maven places jar files under target/
         return [
+            "export JAVA_HOME=$(dirname $(dirname $(readlink -f /usr/bin/java)))",
             " ".join(mvn_cmd + options.maven_parameters),
             "mkdir -p ${CRAFT_PART_INSTALL}/jars",
             r'find ${CRAFT_PART_BUILD}/target -iname "*.jar" -exec ln {} ${CRAFT_PART_INSTALL}/jars \;',
