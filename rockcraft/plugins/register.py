@@ -21,6 +21,8 @@ from craft_parts.plugins.plugins import PluginType
 
 from .python_plugin import PythonPlugin
 from .maven_plugin import MavenPlugin
+from .gradle_plugin import GradlePlugin
+from .java_runtime_plugin import JavaRuntimePlugin
 
 
 def register() -> None:
@@ -31,4 +33,6 @@ def register() -> None:
 def get_plugins() -> dict[str, PluginType]:
     """Get a dict of Rockcraft-specific plugins."""
     return {"python": PythonPlugin,
-            "maven": MavenPlugin}
+            "maven": MavenPlugin,
+            "gradle": GradlePlugin,
+            "java-runtime": JavaRuntimePlugin}
