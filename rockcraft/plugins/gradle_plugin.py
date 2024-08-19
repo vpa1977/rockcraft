@@ -20,9 +20,14 @@
 import logging
 from textwrap import dedent
 from typing import cast
+from typing import Any
 from typing import List
 from typing import Set
+from typing import Dict
 
+from ._proxy import get_gradle_proxy_args
+from craft_parts.plugins import maven_plugin
+from craft_parts.plugins import properties
 from craft_parts.plugins import base
 from overrides import override  # type: ignore[reportUnknownVariableType]
 
@@ -59,7 +64,34 @@ SITECUSTOMIZE_TEMPLATE = dedent(
 ).strip()
 
 
+class GradlePluginProperties(properties.PluginProperties, base.PluginModel):
+    """The part properties used by the gradle plugin."""
+
+    # part properties required by the plugin
+    source: str
+    parameters: str
+    use_wrapper: bool
+
+    @classmethod
+    @override
+    def unmarshal(cls, data: Dict[str, Any]) -> "GradlePluginProperties":
+        """Populate class attributes from the part specification.
+
+        :param data: A dictionary containing part properties.
+
+        :return: The populated plugin properties data object.
+
+        :raise pydantic.ValidationError: If validation fails.
+        """
+        plugin_data = base.extract_plugin_properties(
+            data, plugin_name="gradle", required=["source"]
+        )
+        return cls(**plugin_data)
+
 class GradlePlugin(base.JavaPlugin):
+
+    properties_class = GradlePluginProperties
+
     def get_build_packages(self) -> Set[str]:
         """Return a set of required packages to install in the build environment."""
         return {"openjdk-21-jdk-headless"}
@@ -67,12 +99,23 @@ class GradlePlugin(base.JavaPlugin):
     def get_build_commands(self) -> List[str]:
         """Return a list of commands to run during the build step."""
 
-        # write proxy config, but not now
+        options = cast(GradlePluginProperties, self._options)
 
-        # maven places jar files under target/
+        gradle = "gradle"
+        if options.use_wrapper:
+            gradle = "gradlew"
+
+        if options.parameters is not None:
+            build_cmd = f"{gradle} {options.parameters}"
+        else:
+            build_cmd = f"{gradle} jar"
+
+        build_cmd += " ".join(get_gradle_proxy_args())
+
+        # move jars into the staging area
         return [
             "export JAVA_HOME=$(dirname $(dirname $(readlink -f /usr/bin/java)))",
-            "./gradlew",
+            build_cmd,
             "mkdir -p ${CRAFT_PART_INSTALL}/jars",
             r'find ${CRAFT_PART_BUILD}/target -iname "*.jar" -exec ln {} ${CRAFT_PART_INSTALL}/jars \;',
         ]
