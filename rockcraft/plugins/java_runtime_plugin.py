@@ -64,10 +64,7 @@ SITECUSTOMIZE_TEMPLATE = dedent(
 class JavaRuntimePluginProperties(properties.PluginProperties, base.PluginModel):
     """The part properties used by the gradle plugin."""
 
-    # part properties required by the plugin
-    jars: list[str]
-    source: str
-    source_type: str
+    java_runtime_jars: list[str] = []
 
     @classmethod
     @override
@@ -81,13 +78,20 @@ class JavaRuntimePluginProperties(properties.PluginProperties, base.PluginModel)
         :raise pydantic.ValidationError: If validation fails.
         """
         plugin_data = base.extract_plugin_properties(
-            data, plugin_name="java-runtime", required=["source"]
-        )
+            data, plugin_name="java-runtime")
         return cls(**plugin_data)
 
-class JavaRuntimePlugin(base.JavaPlugin):
+class JavaRuntimePlugin(base.Plugin):
 
     properties_class = JavaRuntimePluginProperties
+
+    def get_build_snaps(self) -> Set[str]:
+        """Return a set of required snaps to install in the build environment."""
+        return {}
+
+    def get_build_environment(self) -> Dict[str, str]:
+        """Return a dictionary with the environment to use in the build step."""
+        return {}
 
     def get_build_packages(self) -> Set[str]:
         """Return a set of required packages to install in the build environment."""
@@ -99,31 +103,36 @@ class JavaRuntimePlugin(base.JavaPlugin):
         options = cast(JavaRuntimePluginProperties, self._options)
 
         commands = []
+
+        # install Java dependencies
+        commands.append("chisel cut --release ./ --root ${CRAFT_PART_INSTALL} base-files_base openjdk-21-jre-headless_security")
+
         # enumerate jar files
         # assume that build plugin deployed them to the staging directory/jars
-        if options.jars:
-            commands.append(f"PROCESS_JARS={" ".join(options.jars)}")
+        if len(options.java_runtime_jars):
+            jars = " ".join(["${CRAFT_STAGE}/" + x  for x in  options.java_runtime_jars])
+            commands.append(f"PROCESS_JARS={jars}")
         else:
             commands.append("PROCESS_JARS=$(find ${CRAFT_STAGE}/jars -type f -name *.jar)")
 
         # create temp folder
-        commands.append("mkdir -p tmp")
+        commands.append("mkdir -p ${CRAFT_PART_BUILD}/tmp")
         # extract jar files into temp folder
-        commands.append("(cd tmp && for jar in ${PROCESS_JARS}; do jar xvf ${jar}; done;)")
-        commands.apepnd("cpath=$(find tmp -type f --name *.jar)")
-        commands.append("cpath=$(echo ${cpath} | sed s'/\s/:/'g`)")
-        commands.append("deps=$(jdeps --module-path=${cpath} --class-path=${cpath} -q --recursive  --ignore-missing-deps --print-module-deps --multi-release 21 ${PROCESS_JARS})")
+        commands.append("(cd ${CRAFT_PART_BUILD}/tmp && for jar in ${PROCESS_JARS}; do jar xvf ${jar}; done;)")
+        commands.append("cpath=$(find ${CRAFT_PART_BUILD}/tmp -type f -name *.jar)")
+        commands.append("cpath=$(echo ${cpath} | sed s'/[[:space:]]/:/'g)")
+        commands.append("echo ${cpath}");
+        commands.append("deps=$(jdeps --class-path=${cpath} -q --recursive  --ignore-missing-deps --print-module-deps --multi-release 21 ${PROCESS_JARS})")
         commands.append("install_root=${CRAFT_PART_INSTALL}/usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/")
-        commands.append("chisel cut --release ./ --root ${CRAFT_PART_INSTALL} base-files_base openjdk-21-jre-headless_security")
+
         commands.append("rm -rf ${install_root} && jlink --add-modules ${deps} --output ${install_root}")
         # create /usr/bin/java link
-        commands.append("(cd ${CRAFT_PART_INSTALL} && ln -s --relative usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/bin/java usr/bin/java)")
+        commands.append("(cd ${CRAFT_PART_INSTALL} && mkdir -p usr/bin && ln -s --relative usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/bin/java usr/bin/)")
         commands.append("mkdir -p ${CRAFT_PART_INSTALL}/etc/ssl/certs/java/")
         # link cacerts
         commands.append("cp /etc/ssl/certs/java/cacerts ${CRAFT_PART_INSTALL}/etc/ssl/certs/java/cacerts")
-        commands.append("""(cd ${CRAFT_PART_INSTALL} && \
-            rm -f usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/lib/security/cacerts && \
-            ln -s --relative etc/ssl/certs/java/cacerts \
-            usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/lib/security/cacerts""")
+        commands.append("cd ${CRAFT_PART_INSTALL}")
+        commands.append("rm -f usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/lib/security/cacerts")
+        commands.append("ln -s --relative etc/ssl/certs/java/cacerts usr/lib/jvm/java-21-openjdk-${CRAFT_TARGET_ARCH}/lib/security/cacerts")
 
         return commands
