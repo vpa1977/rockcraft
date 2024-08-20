@@ -204,6 +204,94 @@ class InitCommand(AppCommand):
             """
             )
         ),
+        "spring-boot-framework": _InitProfile(
+            rockcraft_yaml=textwrap.dedent(
+                """\
+                name: {name}
+                # see {versioned_url}/explanation/bases/
+                # for more information about bases and using 'bare' bases for chiselled rocks
+                base: bare # the base environment for this Spring Boot application
+                build-base: ubuntu@24.04 # Only noble as a build-base is supported
+                version: '0.1' # just for humans. Semantic versioning is recommended
+                summary: A summary of your Spring Boot application # 79 char long summary
+                description: |
+                    This is {name}'s description. You have a paragraph or two to tell the
+                    most important story about it. Keep it under 100 words though,
+                    we live in tweetspace and your description wants to look good in the
+                    container registries out there.
+                platforms: # the platforms this rock should be built on and run on
+                    amd64:
+
+                run_user: _daemon_
+
+                # Uncomment to define your application's service
+                # services:
+                #   {name}:
+                #     override: replace
+                #     summary: {name}'s summary
+                #     command: /usr/bin/java -jar /jars/{name}-0.0.1-SNAPSHOT.jar
+                #     startup: enabled
+
+                # to ensure the spring-boot-framework extension works properly, your application
+                # should have pom.xml or build.gradle in the current directory.
+                extensions:
+                    - spring-boot-framework
+
+                # uncomment the sections you need and adjust according to your requirements.
+                # parts:  # you need to uncomment this line to add or update any part.
+
+                #   Build Maven application
+                #   spring-boot-framework/install-app:
+                #     plugin: maven
+                #     source: .
+                #     source-type: local
+
+                #   Build Gradle application
+                #   spring-boot-framework/install-app:
+                #     plugin: gradle
+                #     source: .
+                #     source-type: local
+
+                #   Create Java runtime
+                #   spring-boot-framework/runtime:
+                #     after:
+                #       - spring-boot-framework/install-app
+                #     # temporary. this would be stage_packages
+                #     source: https://github.com/vpa1977/chisel-releases
+                #     source-type: git
+                #     source-branch: 24.04-openjdk-21-jre-headless
+                #     plugin: java-runtime
+
+                # you may need packages to build your application. Add them here if necessary.
+                #   flask-framework/dependencies:
+                #     build-packages:
+                #       # for example, if you need pkg-config to build one
+                #       # of your packages:
+                #       - pkg-config
+
+                # you can add package slices or Debian packages to the image.
+                # package slices are subsets of Debian packages, which result
+                # in smaller and more secure images.
+                # see {versioned_url}/explanation/chisel/
+
+                # add this part if you want to add packages slices to your image.
+                # you can find a list of packages slices at https://github.com/canonical/chisel-releases
+                #   runtime-slices:
+                #     plugin: nil
+                #     stage-packages:
+                #       # list the required package slices for your application below.
+                #       # for example, for the slice libs of libpq5:
+                #       - libpq5_libs
+
+                # if you want to add a Debian package to your image, add the next part
+                #   runtime-debs:
+                #     plugin: nil
+                #     stage-packages:
+                #       # list required Debian packages for your flask application below.
+                #       - libpq5
+                """
+            )
+        ),
     }
     _DEFAULT_PROFILE = "simple"
 
