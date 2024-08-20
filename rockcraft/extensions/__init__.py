@@ -18,7 +18,7 @@
 
 from ._utils import apply_extensions
 from .gunicorn import DjangoFramework, FlaskFramework
-from .java_runtime import JavaRuntime
+from .spring_boot import SpringBootFramework
 from .registry import get_extension_class, get_extension_names, register, unregister
 
 __all__ = [
@@ -31,4 +31,4 @@ __all__ = [
 
 register("django-framework", DjangoFramework)
 register("flask-framework", FlaskFramework)
-register("java-runtime", JavaRuntime)
+register("spring-boot-framework", SpringBootFramework)
