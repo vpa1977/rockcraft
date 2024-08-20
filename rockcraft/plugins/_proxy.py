@@ -106,7 +106,8 @@ def get_gradle_properties(settings: ProxySettings) -> list[str]:
         if proxy.password is not None:
             ret.append(f"-D{proxy.protocol}.proxyPassword={proxy.password}")
         if len(settings.no_proxy) > 0:
-            ret.append(f"-D{proxy.protocol}.nonProxyHosts={"|".join(settings.no_proxy)}")
+            no_proxy_string="|".join(settings.no_proxy)
+            ret.append(f"-D{proxy.protocol}.nonProxyHosts={no_proxy_string}")
     return ret
 
 def get_gradle_proxy_args():
