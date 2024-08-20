@@ -80,6 +80,7 @@ def create_proxy_settings() -> ProxySettings:
         ProxySettings: structure containing proxy settings.
     """
     settings = ProxySettings()
+    settings.proxies = []
     settings.no_proxy = [key.strip() for key in os.environ.get("no_proxy", "localhost").split(",")]
     for protocol in ("http", "https"):
         env_name = f"{protocol}_proxy"

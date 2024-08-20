@@ -69,8 +69,8 @@ class GradlePluginProperties(properties.PluginProperties, base.PluginModel):
 
     # part properties required by the plugin
     source: str
-    parameters: str
-    use_wrapper: bool
+    gradle_parameters: str = ""
+    gradle_use_wrapper: bool = True
 
     @classmethod
     @override
@@ -92,6 +92,14 @@ class GradlePlugin(base.JavaPlugin):
 
     properties_class = GradlePluginProperties
 
+    def get_build_environment(self) -> Dict[str, str]:
+        """Return a dictionary with the environment to use in the build step."""
+        return {}
+
+    def get_build_snaps(self) -> Set[str]:
+        """Return a set of required packages to install in the build environment."""
+        return {"gradle"}
+
     def get_build_packages(self) -> Set[str]:
         """Return a set of required packages to install in the build environment."""
         return {"openjdk-21-jdk-headless"}
@@ -102,20 +110,20 @@ class GradlePlugin(base.JavaPlugin):
         options = cast(GradlePluginProperties, self._options)
 
         gradle = "gradle"
-        if options.use_wrapper:
-            gradle = "gradlew"
+        if options.gradle_use_wrapper:
+            gradle = "./gradlew"
 
-        if options.parameters is not None:
-            build_cmd = f"{gradle} {options.parameters}"
+        gradle += " ".join(get_gradle_proxy_args())
+
+        if options.gradle_parameters is not None:
+            build_cmd = f"{gradle} {options.gradle_parameters}"
         else:
-            build_cmd = f"{gradle} jar"
-
-        build_cmd += " ".join(get_gradle_proxy_args())
+            build_cmd = f"{gradle} jar --no-daemon"
 
         # move jars into the staging area
         return [
             "export JAVA_HOME=$(dirname $(dirname $(readlink -f /usr/bin/java)))",
             build_cmd,
             "mkdir -p ${CRAFT_PART_INSTALL}/jars",
-            r'find ${CRAFT_PART_BUILD}/target -iname "*.jar" -exec ln {} ${CRAFT_PART_INSTALL}/jars \;',
+            r'find ${CRAFT_PART_BUILD}/build/libs -iname "*.jar" -exec ln {} ${CRAFT_PART_INSTALL}/jars \;',
         ]

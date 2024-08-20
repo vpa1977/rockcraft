@@ -19,4 +19,4 @@
 from .python_plugin import PythonPlugin
 from .register import get_plugins, register
 
-__all__ = ["PythonPlugin", "MavenPlugin", "JavaRuntimePlugin", "get_plugins", "register"]
+__all__ = ["PythonPlugin", "MavenPlugin", "GradlePlugin", "JavaRuntimePlugin", "get_plugins", "register"]
