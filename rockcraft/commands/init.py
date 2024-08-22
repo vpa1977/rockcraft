@@ -263,7 +263,7 @@ class InitCommand(AppCommand):
                 #     plugin: java-runtime
 
                 # you may need packages to build your application. Add them here if necessary.
-                #   flask-framework/dependencies:
+                #   spring-boot-framework/dependencies:
                 #     build-packages:
                 #       # for example, if you need pkg-config to build one
                 #       # of your packages:
