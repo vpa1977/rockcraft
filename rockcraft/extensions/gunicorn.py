@@ -16,17 +16,16 @@
 
 """An extension for the Gunicorn based Python WSGI application extensions."""
 import abc
-import ast
 import fnmatch
 import os.path
-import pathlib
 import posixpath
 import re
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from overrides import override
 
 from ..errors import ExtensionError
+from ._python_utils import has_global_variable
 from .extension import Extension, get_extensions_data_dir
 
 
@@ -35,9 +34,9 @@ class _GunicornBase(Extension):
 
     @staticmethod
     @override
-    def get_supported_bases() -> Tuple[str, ...]:
+    def get_supported_bases() -> tuple[str, ...]:
         """Return supported bases."""
-        return "bare", "ubuntu@22.04", "ubuntu:22.04"
+        return "bare", "ubuntu@22.04", "ubuntu:22.04", "ubuntu@24.04"
 
     @staticmethod
     @override
@@ -60,7 +59,7 @@ class _GunicornBase(Extension):
         """Ensure this extension can apply to the current rockcraft project."""
 
     @abc.abstractmethod
-    def gen_install_app_part(self) -> Dict[str, Any]:
+    def gen_install_app_part(self) -> dict[str, Any]:
         """Generate the content of *-framework/install-app part."""
 
     def _gen_parts(self) -> dict:
@@ -72,7 +71,7 @@ class _GunicornBase(Extension):
             stage_packages = ["python3.10-venv_ensurepip"]
             build_environment = [{"PARTS_PYTHON_INTERPRETER": "python3.10"}]
 
-        parts: Dict[str, Any] = {
+        parts: dict[str, Any] = {
             f"{self.framework}-framework/dependencies": {
                 "plugin": "python",
                 "stage-packages": stage_packages,
@@ -114,7 +113,7 @@ class _GunicornBase(Extension):
         return parts
 
     @override
-    def get_root_snippet(self) -> Dict[str, Any]:
+    def get_root_snippet(self) -> dict[str, Any]:
         """Fill in some default root components.
 
         Default values:
@@ -125,7 +124,7 @@ class _GunicornBase(Extension):
           - parts: see _GunicornBase._gen_parts
         """
         self.check_project()
-        snippet: Dict[str, Any] = {
+        snippet: dict[str, Any] = {
             "run_user": "_daemon_",
             "services": {
                 self.framework: {
@@ -152,32 +151,14 @@ class _GunicornBase(Extension):
         return snippet
 
     @override
-    def get_part_snippet(self) -> Dict[str, Any]:
+    def get_part_snippet(self) -> dict[str, Any]:
         """Return the part snippet to apply to existing parts."""
         return {}
 
     @override
-    def get_parts_snippet(self) -> Dict[str, Any]:
+    def get_parts_snippet(self) -> dict[str, Any]:
         """Return the parts to add to parts."""
         return {}
-
-    def has_global_variable(
-        self, source_file: pathlib.Path, variable_name: str
-    ) -> bool:
-        """Check the given Python source code has a global variable defined."""
-        tree = ast.parse(source_file.read_text(encoding="utf-8"))
-        for node in ast.iter_child_nodes(tree):
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == variable_name:
-                        return True
-            if isinstance(node, ast.ImportFrom):
-                for name in node.names:
-                    if (name.asname is not None and name.asname == variable_name) or (
-                        name.asname is None and name.name == variable_name
-                    ):
-                        return True
-        return False
 
 
 class FlaskFramework(_GunicornBase):
@@ -202,7 +183,7 @@ class FlaskFramework(_GunicornBase):
         return False
 
     @override
-    def gen_install_app_part(self) -> Dict[str, Any]:
+    def gen_install_app_part(self) -> dict[str, Any]:
         source_files = [f.name for f in sorted(self.project_root.iterdir())]
         # if prime is not in exclude mode, use it to generate the stage and organize
         if self._app_prime and self._app_prime[0] and self._app_prime[0][0] != "-":
@@ -267,7 +248,7 @@ class FlaskFramework(_GunicornBase):
                 "flask application can not be imported from app:app, no app.py file found in the project root."
             ]
         try:
-            has_app = self.has_global_variable(app_file, "app")
+            has_app = has_global_variable(app_file, "app")
         except SyntaxError as err:
             return [f"error parsing app.py: {err.msg}"]
 
@@ -332,13 +313,14 @@ class DjangoFramework(_GunicornBase):
         return "django"
 
     @override
-    def gen_install_app_part(self) -> Dict[str, Any]:
+    def gen_install_app_part(self) -> dict[str, Any]:
         """Return the prime list for the Flask project."""
         if "django-framework/install-app" not in self.yaml_data.get("parts", {}):
             return {
                 "plugin": "dump",
                 "source": self.name,
                 "organize": {"*": "django/app/", ".*": "django/app/"},
+                "stage": ["-django/app/db.sqlite3"],
             }
         return {}
 
@@ -349,7 +331,7 @@ class DjangoFramework(_GunicornBase):
                 f"django application can not be imported from {self.default_wsgi_path}, "
                 f"no wsgi.py file found in the project directory ({str(wsgi_file.parent)})."
             )
-        if not self.has_global_variable(wsgi_file, "application"):
+        if not has_global_variable(wsgi_file, "application"):
             raise ExtensionError(
                 "django application can not be imported from {self.default_wsgi_path}, "
                 "no variable named application in application.py"

@@ -17,6 +17,7 @@
 """Extension processor and related utilities."""
 
 from ._utils import apply_extensions
+from .fastapi import FastAPIFramework
 from .go import GoFramework
 from .gunicorn import DjangoFramework, FlaskFramework
 from .spring_boot import SpringBootFramework
@@ -31,6 +32,7 @@ __all__ = [
 ]
 
 register("django-framework", DjangoFramework)
+register("fastapi-framework", FastAPIFramework)
 register("flask-framework", FlaskFramework)
 register("go-framework", GoFramework)
 register("spring-boot-framework", SpringBootFramework)
