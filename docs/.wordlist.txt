@@ -6,6 +6,7 @@ autotools
 boolean
 centric
 Charmcraft
+classpath
 CLI
 cli
 CMake
@@ -53,6 +54,9 @@ https
 init
 interoperable
 io
+jdeps
+JLink
+jlink
 js
 json
 Kubernetes
@@ -82,6 +86,7 @@ NPM
 npm
 OCI
 oci
+openjdk
 OpenSSL
 openssl
 OpenSSL's
