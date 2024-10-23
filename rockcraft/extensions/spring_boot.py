@@ -31,9 +31,9 @@ class SpringBootFramework(Extension):
     def _check_project(self):
         """Ensure that either pom.xml or gradlew is present."""
         if "spring-boot-framework/install-app" not in self.yaml_data.get("parts", {}):
-            if not os.path.exists(f"{self.project_root}/pom.xml") and not os.path.exists(
-                f"{self.project_root}/gradlew"
-            ):
+            if not os.path.exists(
+                f"{self.project_root}/pom.xml"
+            ) and not os.path.exists(f"{self.project_root}/gradlew"):
                 raise ExtensionError(
                     "missing pom.xml or gradlew file",
                     doc_slug="/reference/extensions/spring-boot-framework",

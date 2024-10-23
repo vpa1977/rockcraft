@@ -32,4 +32,9 @@ def register() -> None:
 
 def get_plugins() -> dict[str, PluginType]:
     """Get a dict of Rockcraft-specific plugins."""
-    return {"jlink": JLinkPlugin, "maven": MavenPlugin, "poetry": PoetryPlugin, "python": PythonPlugin}
+    return {
+        "jlink": JLinkPlugin,
+        "maven": MavenPlugin,
+        "poetry": PoetryPlugin,
+        "python": PythonPlugin,
+    }
